@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="nl">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Roosterprintje</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;600;700&display=swap" />
+        <style>
+            :root {
+                --bg: #ffffff;
+                --fg: #111111;
+                --muted: #777777;
+                --line: #cfcfcf;
+                --axis-w: 52px;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--fg);
+                font-family: "IBM Plex Sans", system-ui, sans-serif;
+                line-height: 1.4;
+            }
+
+            input[type="checkbox"] {
+                accent-color: var(--fg);
+                width: 14px;
+                height: 14px;
+                margin: 0;
+            }
+
+            .page {
+                max-width: 72rem;
+                margin-inline: auto;
+                padding: 24px 20px 48px;
+            }
+
+            h1 {
+                margin: 0 0 4px;
+                font-size: 20px;
+            }
+
+            .class-period {
+                display: none;
+                margin-left: 10px;
+                font-size: 15px;
+                font-weight: 400;
+                color: var(--muted);
+            }
+
+            .hint {
+                margin: 0 0 12px;
+                font-size: 14px;
+                color: var(--muted);
+            }
+
+            #print {
+                font: inherit;
+                font-size: 14px;
+                padding: 6px 16px;
+                border: 1px solid var(--fg);
+                background: none;
+                color: var(--fg);
+                cursor: pointer;
+            }
+            #print:hover {
+                background: var(--fg);
+                color: var(--bg);
+            }
+
+            .abbrev-toggle {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 14px;
+                font-size: 14px;
+                color: var(--muted);
+                cursor: pointer;
+            }
+            .abbrev-toggle:has(:checked) {
+                color: var(--fg);
+            }
+
+            .schedule {
+                display: grid;
+                grid-template-columns: max-content max-content;
+                align-items: start;
+                gap: 28px;
+                margin-top: 24px;
+            }
+
+            @media (max-width: 860px) {
+                .schedule {
+                    grid-template-columns: minmax(0, 1fr);
+                }
+            }
+
+            #calendar {
+                display: grid;
+                width: fit-content;
+                grid-template-columns: var(--axis-w) repeat(5, minmax(0, 1fr));
+            }
+
+            #subjects {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            #subjects label {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                color: var(--muted);
+                cursor: pointer;
+            }
+            #subjects label:has(:checked) {
+                color: var(--fg);
+            }
+
+            .day-head {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px 0;
+                font-size: 15px;
+                font-weight: 700;
+                border-bottom: 1px solid var(--fg);
+            }
+            .day-head:first-child {
+                border-right: 1px solid var(--fg);
+            }
+
+            .axis {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: 700;
+                border-top: 1px dashed var(--line);
+                border-right: 1px solid var(--fg);
+            }
+
+            .axis-time {
+                position: absolute;
+                left: 0;
+                top: 0;
+                transform: translateY(-50%);
+                padding-right: 4px;
+                background: var(--bg);
+                font-family: "IBM Plex Mono", ui-monospace, monospace;
+                font-size: 10px;
+                font-weight: 400;
+                color: var(--muted);
+            }
+            .axis-time.end {
+                top: auto;
+                bottom: 0;
+                transform: translateY(50%);
+            }
+
+            .slot {
+                display: flex;
+                border-top: 1px dashed var(--line);
+            }
+
+            .axis.first,
+            .slot.first {
+                border-top: 0;
+            }
+            .axis.last,
+            .slot.last {
+                border-bottom: 1px dashed var(--line);
+            }
+
+            .day-head + .day-head,
+            .slot + .slot {
+                border-left: 1px solid var(--line);
+            }
+
+            .lesson {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 8px 16px;
+                line-height: 1.25;
+            }
+            .lesson + .lesson {
+                border-left: 1px dashed var(--line);
+            }
+
+            .lesson-subject {
+                font-size: 15px;
+                font-weight: 600;
+            }
+            .lesson-room {
+                margin-top: 2px;
+                font-size: 11px;
+                color: var(--muted);
+            }
+
+            @media print {
+                @page {
+                    margin: 12mm;
+                }
+                .hint,
+                #print,
+                .abbrev-toggle,
+                #subjects {
+                    display: none;
+                }
+                .page {
+                    max-width: none;
+                    padding: 0;
+                }
+                .class-period {
+                    display: inline;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <h1>Rooster<span class="class-period">6A2 Periode 1</span></h1>
+            <p class="hint">Vink je vakken aan en print je eigen rooster.</p>
+            <button id="print" type="button">Printen</button>
+            <label class="abbrev-toggle">
+                <input id="short-labels" type="checkbox" />
+                Betere afkortingen tonen
+            </label>
+
+            <div class="schedule">
+                <div id="calendar"></div>
+                <aside id="subjects"></aside>
+            </div>
+        </div>
+
+        <script>
+            const DAYS = ["ma", "di", "wo", "do", "vr"];
+
+            const SLOTS = [
+                { period: 1, start: 500, end: 550 },
+                { period: 2, start: 550, end: 600 },
+                { period: 3, start: 600, end: 650 },
+                { start: 650, end: 670 },
+                { period: 4, start: 670, end: 720 },
+                { period: 5, start: 720, end: 770 },
+                { start: 770, end: 800 },
+                { period: 6, start: 800, end: 850 },
+                { period: 7, start: 850, end: 900 },
+                { start: 900, end: 910 },
+                { period: 8, start: 910, end: 960 },
+                { period: 9, start: 960, end: 1010 }
+            ];
+
+            const LESSONS = {
+                "ma:1": "DUTL 1.10",
+                "di:1": "NLT 2.15",
+                "do:1": "ENTL B3",
+                "vr:1": "MAW 1.11",
+
+                "ma:2": "DUTL 1.10",
+                "di:2": "NLT 2.15",
+                "wo:2": "DUTL 1.10",
+                "do:2": "MAW 1.05",
+                "vr:2": "SCHK 2.08",
+
+                "ma:3": "MAW 0.17",
+                "di:3": "SCHK 2.08",
+                "do:3": "WISB 1.08",
+                "vr:3": "NETL 1.08",
+
+                "ma:4": "MEN 2.08",
+                "di:4": "ENTL 0.14",
+                "wo:4": ["WISB 2.03", "WISA 3.11", "WISC 3.11"],
+                "do:4": "FATL 1.11",
+                "vr:4": "MAW 1.11",
+
+                "ma:5": "ENTL B3",
+                "di:5": "NAT 2.15",
+                "wo:5": "NAT 2.15",
+                "do:5": "NETL 1.06",
+                "vr:5": "NAT 2.15",
+
+                "ma:6": "SCHK 2.08",
+                "di:6": ["WISB 2.03", "WISA 2.04", "WISC 2.04"],
+                "wo:6": "BIOL 2.14",
+                "do:6": "BIOL 0.16",
+                "vr:6": ["TUTL 3.07", "KUBV 0.21"],
+
+                "ma:7": "BIOL 2.14",
+                "di:7": "FATL 1.11",
+                "wo:7": "NETL 0.17",
+                "do:7": "NLT 1.08",
+                "vr:7": "KUBV 0.21",
+
+                "ma:8": "WISA 2.04",
+                "wo:8": "FATL 1.11",
+                "do:8": "LO",
+                "vr:8": "KUA 0.21",
+
+                "do:9": "LO",
+                "vr:9": "KUA 0.21"
+            };
+
+            const SUBJECTS = {
+                BIOL: ["BIO", "Biologie"],
+                DUTL: ["DE", "Duits"],
+                ENTL: ["EN", "Engels"],
+                FATL: ["FR", "Frans"],
+                KUA: ["KUA", "Kunst algemeen"],
+                KUBV: ["KUBV", "Kunst beeldend"],
+                LO: ["GYM", "Gym"],
+                MAW: ["MAW", "Maatschappijwetenschappen"],
+                MEN: ["MEN", "Mentoruur"],
+                NAT: ["NAT", "Natuurkunde"],
+                NETL: ["NL", "Nederlands"],
+                NLT: ["NLT", "NLT"],
+                SCHK: ["SCHK", "Scheikunde"],
+                TUTL: ["TR", "Turks"],
+                WISA: ["WISA", "Wiskunde A"],
+                WISB: ["WISB", "Wiskunde B"],
+                WISC: ["WISC", "Wiskunde C"]
+            };
+
+            const STORAGE_KEY = "roosterprintje.v1";
+
+            const lessonsAt = (day, period) => [LESSONS[`${day}:${period}`] ?? []].flat();
+
+            const subjectOf = (lesson) => lesson.split(" ")[0];
+            const roomOf = (lesson) => lesson.split(" ")[1] ?? "";
+
+            const fullNameOf = (subject) => SUBJECTS[subject]?.[1] ?? subject;
+            const shortLabelOf = (subject) => SUBJECTS[subject]?.[0] ?? subject;
+
+            const pad2 = (n) => String(n).padStart(2, "0");
+            const formatTime = (minutes) => `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}`;
+
+            const allSubjects = [...new Set(Object.values(LESSONS).flat().map(subjectOf))].sort();
+
+            function loadState() {
+                try {
+                    const { hidden = [], shortLabels = false } = JSON.parse(localStorage.getItem(STORAGE_KEY)) ?? {};
+                    return { hidden: new Set(hidden), shortLabels: Boolean(shortLabels) };
+                } catch {
+                    return { hidden: new Set(), shortLabels: false };
+                }
+            }
+
+            function saveState() {
+                try {
+                    localStorage.setItem(
+                        STORAGE_KEY,
+                        JSON.stringify({
+                            hidden: [...state.hidden],
+                            shortLabels: state.shortLabels
+                        })
+                    );
+                } catch {}
+            }
+
+            const state = loadState();
+
+            function lessonCell(lesson) {
+                const subject = subjectOf(lesson);
+                const room = roomOf(lesson);
+                const label = state.shortLabels ? shortLabelOf(subject) : subject;
+                const roomEl = room ? `<span class="lesson-room">${room}</span>` : "";
+                return `<div class="lesson"><span class="lesson-subject">${label}</span>${roomEl}</div>`;
+            }
+
+            function renderCalendar() {
+                const calendar = document.getElementById("calendar");
+                calendar.style.gridTemplateRows = "";
+
+                const lastSlot = SLOTS.length - 1;
+                const rows = SLOTS.flatMap((slot, i) => {
+                    const edge = (i === 0 ? " first" : "") + (i === lastSlot ? " last" : "");
+                    const endTime = i === lastSlot ? `<span class="axis-time end">${formatTime(slot.end)}</span>` : "";
+                    return [
+                        `<div class="axis${edge}"><span class="axis-time">${formatTime(slot.start)}</span>${slot.period ?? ""}${endTime}</div>`,
+                        ...DAYS.map((day) => {
+                            const lessons = slot.period ? lessonsAt(day, slot.period).filter((lesson) => !state.hidden.has(subjectOf(lesson))) : [];
+                            return `<div class="slot${edge}">${lessons.map(lessonCell).join("")}</div>`;
+                        })
+                    ];
+                });
+
+                calendar.innerHTML = [`<div class="day-head"></div>`, ...DAYS.map((day) => `<div class="day-head">${day.toUpperCase()}</div>`), ...rows].join("");
+                sizeCalendarRows(calendar);
+            }
+
+            function sizeCalendarRows(calendar) {
+                const cols = DAYS.length + 1;
+                const bodyCells = [...calendar.children].slice(cols);
+                const lessonHeight = Math.max(...SLOTS.map((slot, i) => (slot.period ? bodyCells[i * cols].getBoundingClientRect().height : 0)));
+                const breakHeight = calendar.querySelector(".axis-time").getBoundingClientRect().height + 6;
+                calendar.style.gridTemplateRows = ["auto", ...SLOTS.map((slot) => `${slot.period ? lessonHeight : breakHeight}px`)].join(" ");
+            }
+
+            function renderSubjectList() {
+                const container = document.getElementById("subjects");
+                container.innerHTML = allSubjects.map((subject) => `<label><input type="checkbox" value="${subject}"${state.hidden.has(subject) ? "" : " checked"} />${fullNameOf(subject)}</label>`).join("");
+
+                container.addEventListener("change", ({ target }) => {
+                    state.hidden[target.checked ? "delete" : "add"](target.value);
+                    saveState();
+                    renderCalendar();
+                });
+            }
+
+            const shortLabelsToggle = document.getElementById("short-labels");
+            shortLabelsToggle.checked = state.shortLabels;
+            shortLabelsToggle.addEventListener("change", () => {
+                state.shortLabels = shortLabelsToggle.checked;
+                saveState();
+                renderCalendar();
+            });
+
+            document.getElementById("print").addEventListener("click", () => window.print());
+
+            renderSubjectList();
+            renderCalendar();
+        </script>
+    </body>
+</html>
