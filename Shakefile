@@ -2,7 +2,7 @@
 SRC="site/**"
 
 serve() {
-  i:serve_static site 8005
+  i:serve_static site
 }
 
 deploy() {
