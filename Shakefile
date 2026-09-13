@@ -6,7 +6,6 @@ serve() {
 }
 
 deploy() {
-  build
   format
   g:deploy
 }
